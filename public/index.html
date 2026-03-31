@@ -573,7 +573,13 @@
 
       // Collect all unique sources across jobs
       const allSources = new Set();
-      jobs.forEach(j => (j.sources||[]).forEach(s => allSources.add(s.toLowerCase().includes("linkedin")?"LinkedIn":s.toLowerCase().includes("indeed")?"Indeed":s)));
+      jobs.forEach(j => (j.sources||[]).forEach(s => {
+        const l = s.toLowerCase();
+        if (l.includes("linkedin")) allSources.add("LinkedIn");
+        else if (l.includes("indeed")) allSources.add("Indeed");
+        else if (l.includes("glassdoor")) allSources.add("Glassdoor");
+        else allSources.add(s);
+      }));
 
       const proc = [...jobs].map(j => ({ ...j, _s: scores[j.id]?.score, _h: toHours(j.postedAt) }));
       proc.sort((a,b) => {
@@ -671,8 +677,8 @@
               <div className="toolbar-left">
                 {/* Source filters */}
                 <button className={`pill ${sourceFilter==="all"?"on":""}`} onClick={()=>setSourceFilter("all")}>All Sources</button>
-                {allSources.has("LinkedIn") && <button className={`pill linkedin ${sourceFilter==="linkedin"?"on":""}`} onClick={()=>setSourceFilter(sourceFilter==="linkedin"?"all":"linkedin")}>LinkedIn</button>}
-                {allSources.has("Indeed") && <button className={`pill indeed ${sourceFilter==="indeed"?"on":""}`} onClick={()=>setSourceFilter(sourceFilter==="indeed"?"all":"indeed")}>Indeed</button>}
+                <button className={`pill linkedin ${sourceFilter==="linkedin"?"on":""}`} onClick={()=>setSourceFilter(sourceFilter==="linkedin"?"all":"linkedin")}>LinkedIn</button>
+                <button className={`pill indeed ${sourceFilter==="indeed"?"on":""}`} onClick={()=>setSourceFilter(sourceFilter==="indeed"?"all":"indeed")}>Indeed</button>
                 <span style={{width:1,height:20,background:"var(--border)",margin:"0 4px"}}/>
                 {/* Score filters */}
                 {has && <>
