@@ -24,8 +24,11 @@ app.get("/api/health", (req, res) => {
 // ============================================================
 // Helper: fetch one page of Google Jobs from SerpAPI
 // ============================================================
-async function fetchJobsPage(query, apiKey, start = 0) {
-  const url = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&hl=en&start=${start}&api_key=${apiKey}`;
+async function fetchJobsPage(query, apiKey, nextPageToken = null) {
+  let url = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&hl=en&api_key=${apiKey}`;
+  if (nextPageToken) {
+    url += `&next_page_token=${encodeURIComponent(nextPageToken)}`;
+  }
   const response = await fetch(url);
   const data = await response.json();
 
@@ -33,7 +36,10 @@ async function fetchJobsPage(query, apiKey, start = 0) {
     throw new Error(data.error || "SerpAPI request failed");
   }
 
-  return data.jobs_results || [];
+  return {
+    jobs: data.jobs_results || [],
+    nextToken: data.serpapi_pagination?.next_page_token || null,
+  };
 }
 
 // ============================================================
@@ -52,20 +58,21 @@ app.post("/api/jobs", async (req, res) => {
   const query = `${searchKeywords} jobs in ${searchLocation}`;
 
   try {
-    // Fetch multiple pages to get ~50 jobs
-    // Google Jobs returns ~10 per page, so we need 5 pages
-    const pages = [0, 10, 20, 30, 40];
     const allResults = [];
+    let nextToken = null;
+    const maxPages = 5; // up to 5 pages for ~50 jobs
 
-    for (const start of pages) {
+    for (let page = 0; page < maxPages; page++) {
       try {
-        const pageResults = await fetchJobsPage(query, SERPAPI_KEY, start);
-        if (pageResults.length === 0) break; // no more results
-        allResults.push(...pageResults);
+        const { jobs, nextToken: token } = await fetchJobsPage(query, SERPAPI_KEY, nextToken);
+        if (jobs.length === 0) break;
+        allResults.push(...jobs);
+        nextToken = token;
+        if (!nextToken) break; // no more pages
       } catch (pageErr) {
-        console.error(`Error fetching page starting at ${start}:`, pageErr.message);
-        if (allResults.length > 0) break; // we have some results, stop
-        throw pageErr; // no results at all, throw
+        console.error(`Error fetching page ${page + 1}:`, pageErr.message);
+        if (allResults.length > 0) break;
+        throw pageErr;
       }
     }
 
@@ -88,7 +95,6 @@ app.post("/api/jobs", async (req, res) => {
         applyUrl = item.share_link;
       }
 
-      // Extract highlights as tags
       const tags = item.job_highlights
         ? item.job_highlights.flatMap((h) => h.items || []).slice(0, 5)
         : [];
@@ -180,7 +186,7 @@ Respond ONLY with valid JSON — no markdown, no backticks. Format:
 
       if (!response.ok) {
         console.error("Claude API error:", result);
-        continue; // skip failed batch, continue with others
+        continue;
       }
 
       const text = result.content?.[0]?.text || "[]";
