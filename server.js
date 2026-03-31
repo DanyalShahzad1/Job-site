@@ -22,65 +22,115 @@ app.get("/api/health", (req, res) => {
 });
 
 // ============================================================
-// POST /api/jobs  –  Scrape LinkedIn jobs via Apify
+// POST /api/jobs  –  Search Indeed jobs via Claude + MCP
 // ============================================================
 app.post("/api/jobs", async (req, res) => {
-  const APIFY_TOKEN = process.env.APIFY_TOKEN;
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-  if (!APIFY_TOKEN) {
-    return res.status(500).json({ error: "Missing APIFY_TOKEN" });
+  if (!ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: "Missing ANTHROPIC_API_KEY" });
   }
 
-  // Accept optional search params from frontend
-  const { keywords, location, jobCount } = req.body || {};
+  const { keywords, location, jobType } = req.body || {};
   const searchKeywords = keywords || "financial analyst";
-  const searchLocation = location || "Toronto, Ontario, Canada";
-  const count = jobCount || 20;
-
-  const searchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(searchKeywords)}&location=${encodeURIComponent(searchLocation)}`;
+  const searchLocation = location || "Toronto, Ontario";
 
   try {
-    const response = await fetch(
-      `https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          urls: [searchUrl],
-          scrapeCompanyDetails: false,
-          jobCount: count,
-        }),
-      }
-    );
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        tools: [
+          {
+            type: "web_search_20250305",
+            name: "web_search",
+          },
+        ],
+        mcp_servers: [
+          {
+            type: "url",
+            url: "https://mcp.indeed.com/claude/mcp",
+            name: "indeed-mcp",
+          },
+        ],
+        messages: [
+          {
+            role: "user",
+            content: `Search for "${searchKeywords}" jobs in "${searchLocation}" on Indeed (country code: CA)${jobType ? `, job type: ${jobType}` : ""}.
 
-    const text = await response.text();
+Return ONLY valid JSON — no markdown, no backticks, no explanation. Format:
+[
+  {
+    "id": "the_job_id",
+    "title": "Job Title",
+    "company": "Company Name",
+    "location": "City, Province",
+    "type": "Full-time or Contract or Internship or Part-time or Temporary",
+    "url": "the apply URL from results",
+    "salary": "salary if available or empty string",
+    "postedAt": "posted date if available or empty string"
+  }
+]
+
+Return every job from the search results. Only return the JSON array, nothing else.`,
+          },
+        ],
+      }),
+    });
+
+    const result = await response.json();
 
     if (!response.ok) {
-      return res.status(500).json({
-        error: "Apify request failed",
-        status: response.status,
-        body: text,
-      });
+      console.error("Claude API error:", JSON.stringify(result));
+      return res.status(500).json({ error: "Claude API request failed", details: result });
     }
 
-    let data;
+    // Extract text from Claude's response (may have multiple content blocks)
+    const textBlocks = (result.content || [])
+      .filter((block) => block.type === "text")
+      .map((block) => block.text);
+
+    const fullText = textBlocks.join("\n");
+
+    // Try to parse JSON from the response
+    let jobs = [];
     try {
-      data = JSON.parse(text);
+      const clean = fullText.replace(/```json|```/g, "").trim();
+      jobs = JSON.parse(clean);
     } catch {
-      return res.status(500).json({ error: "Invalid JSON from Apify", body: text });
+      // Try to find JSON array in the text
+      const match = fullText.match(/\[[\s\S]*\]/);
+      if (match) {
+        try {
+          jobs = JSON.parse(match[0]);
+        } catch {
+          console.error("Could not parse jobs from response:", fullText);
+          return res.status(500).json({ error: "Failed to parse job results", raw: fullText });
+        }
+      } else {
+        console.error("No JSON array found in response:", fullText);
+        return res.status(500).json({ error: "No job results found", raw: fullText });
+      }
     }
 
-    const jobs = data.map((item, i) => ({
-      id: item.id || `job-${i}`,
-      title: item.title || "Untitled",
-      company: item.companyName || item.company || "Unknown",
-      location: item.location || "N/A",
-      type: item.employmentType || item.type || "Full-time",
-      url: item.link || item.url || "",
-      description: item.description || "",
-      tags: item.tags || [],
-      postedAt: item.postedAt || item.publishedAt || "",
-      salary: item.salary || "",
+    // Normalize
+    jobs = jobs.map((j, i) => ({
+      id: j.id || `job-${i}`,
+      title: j.title || "Untitled",
+      company: j.company || "Unknown",
+      location: j.location || "N/A",
+      type: j.type || "Full-time",
+      url: j.url || "",
+      salary: j.salary || "",
+      postedAt: j.postedAt || "",
+      description: j.description || "",
+      tags: j.tags || [],
     }));
 
     return res.json(jobs);
@@ -106,7 +156,7 @@ app.post("/api/analyze", async (req, res) => {
     const jobList = jobs
       .map(
         (j) =>
-          `ID:${j.id} | ${j.title} at ${j.company} | ${j.location} | ${j.type} | Tags: ${(j.tags || []).join(", ")}`
+          `ID:${j.id} | ${j.title} at ${j.company} | ${j.location} | ${j.type} | Salary: ${j.salary || "N/A"}`
       )
       .join("\n");
 
@@ -119,7 +169,7 @@ app.post("/api/analyze", async (req, res) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [
           {
             role: "user",
@@ -152,7 +202,12 @@ Respond ONLY with valid JSON — no markdown, no backticks. Format:
     try {
       scores = JSON.parse(clean);
     } catch {
-      return res.status(500).json({ error: "Failed to parse Claude response", raw: text });
+      const match = clean.match(/\[[\s\S]*\]/);
+      if (match) {
+        scores = JSON.parse(match[0]);
+      } else {
+        return res.status(500).json({ error: "Failed to parse Claude response", raw: text });
+      }
     }
 
     return res.json(scores);
