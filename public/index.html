@@ -5,371 +5,417 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Danyal Job Match Engine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
-  <!-- PDF.js for reading uploaded PDFs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  </script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #0a0b0f;
-      --bg-card: #12131a;
-      --bg-card-hover: #181923;
-      --bg-elevated: #1a1b26;
-      --border: #1e2030;
-      --border-light: #2a2d42;
-      --text: #e2e4f0;
-      --text-muted: #7a7f9a;
-      --text-dim: #505370;
-      --accent: #6c8aff;
-      --accent-glow: rgba(108, 138, 255, 0.15);
-      --green: #34d399;
-      --green-bg: rgba(52, 211, 153, 0.08);
-      --green-border: rgba(52, 211, 153, 0.2);
+      --bg: #08090c;
+      --bg-subtle: #0d0f14;
+      --surface: #111318;
+      --surface-hover: #161820;
+      --surface-active: #1a1d27;
+      --border: #1c1f2b;
+      --border-hover: #282c3d;
+      --text: #eaecf5;
+      --text-secondary: #8b90a8;
+      --text-tertiary: #555a72;
+      --accent: #818cf8;
+      --accent-dim: rgba(129, 140, 248, 0.12);
+      --accent-bright: #a5b4fc;
+      --emerald: #34d399;
+      --emerald-dim: rgba(52, 211, 153, 0.1);
+      --emerald-border: rgba(52, 211, 153, 0.25);
       --amber: #fbbf24;
-      --amber-bg: rgba(251, 191, 36, 0.08);
+      --amber-dim: rgba(251, 191, 36, 0.1);
       --amber-border: rgba(251, 191, 36, 0.2);
-      --red: #f87171;
-      --red-bg: rgba(248, 113, 113, 0.08);
-      --red-border: rgba(248, 113, 113, 0.2);
-      --blue: #60a5fa;
-      --blue-bg: rgba(96, 165, 250, 0.08);
-      --blue-border: rgba(96, 165, 250, 0.2);
-      --purple: #a78bfa;
-      --purple-bg: rgba(167, 139, 250, 0.08);
-      --purple-border: rgba(167, 139, 250, 0.2);
-      --radius: 10px;
-      --radius-sm: 6px;
-      --font: 'DM Sans', -apple-system, sans-serif;
-      --mono: 'JetBrains Mono', monospace;
+      --rose: #fb7185;
+      --rose-dim: rgba(251, 113, 133, 0.1);
+      --rose-border: rgba(251, 113, 133, 0.2);
+      --sky: #38bdf8;
+      --sky-dim: rgba(56, 189, 248, 0.1);
+      --sky-border: rgba(56, 189, 248, 0.2);
+      --violet: #a78bfa;
+      --violet-dim: rgba(167, 139, 250, 0.1);
+      --violet-border: rgba(167, 139, 250, 0.2);
+      --linkedin: #0a66c2;
+      --indeed: #2164f3;
+      --font-body: 'Outfit', -apple-system, sans-serif;
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-xs: 5px;
     }
 
+    html { scroll-behavior: smooth; }
     body {
-      font-family: var(--font);
+      font-family: var(--font-body);
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-
-    .app-shell { max-width: 1120px; margin: 0 auto; padding: 40px 24px 80px; }
-
-    .header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 40px;
-    }
-    .header-left { display: flex; align-items: center; gap: 14px; }
-    .logo-mark {
-      width: 38px; height: 38px;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 16px; color: #fff;
-    }
-    .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
-    .header h1 span { color: var(--text-muted); font-weight: 400; }
-
-    /* ---- Resume Upload Section ---- */
-    .resume-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px;
-      margin-bottom: 28px;
-    }
-    .resume-section .section-label {
-      font-size: 11px; color: var(--text-dim); text-transform: uppercase;
-      letter-spacing: 0.8px; font-weight: 500; margin-bottom: 12px;
-    }
-    .resume-upload-area {
-      border: 2px dashed var(--border-light);
-      border-radius: var(--radius-sm);
-      padding: 30px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .resume-upload-area:hover { border-color: var(--accent); background: var(--accent-glow); }
-    .resume-upload-area.has-resume {
-      border-style: solid;
-      border-color: var(--green-border);
-      background: var(--green-bg);
-    }
-    .resume-upload-area svg {
-      width: 32px; height: 32px; stroke: var(--text-dim); fill: none;
-      stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
-      margin-bottom: 10px;
-    }
-    .resume-upload-area.has-resume svg { stroke: var(--green); }
-    .resume-upload-area p { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
-    .resume-upload-area small { font-size: 12px; color: var(--text-dim); }
-    .resume-upload-area.has-resume p { color: var(--green); }
-    .resume-upload-area input[type="file"] { display: none; }
-
-    .resume-preview {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.6;
-      max-height: 80px;
-      overflow: hidden;
-      position: relative;
-    }
-    .resume-preview::after {
+    /* Noise overlay */
+    body::before {
       content: '';
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 30px;
-      background: linear-gradient(transparent, var(--bg-card));
-    }
-    .resume-actions {
-      display: flex; gap: 8px; margin-top: 10px;
-    }
-    .resume-actions button {
-      font-size: 12px; padding: 5px 12px; border-radius: 4px;
-      border: 1px solid var(--border); background: var(--bg-elevated);
-      color: var(--text-muted); font-family: var(--font); cursor: pointer;
-      transition: all 0.2s;
-    }
-    .resume-actions button:hover { color: var(--text); border-color: var(--border-light); }
-    .resume-actions button.danger:hover { color: var(--red); border-color: var(--red-border); }
-
-    /* ---- Platform Links ---- */
-    .platform-section { margin-bottom: 28px; }
-    .platform-title {
-      font-size: 12px; color: var(--text-dim); text-transform: uppercase;
-      letter-spacing: 0.8px; margin-bottom: 10px; font-weight: 500;
-    }
-    .platform-links { display: flex; gap: 8px; flex-wrap: wrap; }
-    .platform-link {
-      font-size: 13px; padding: 7px 14px; border-radius: var(--radius-sm);
-      background: var(--blue-bg); border: 1px solid var(--blue-border);
-      color: var(--blue); text-decoration: none; transition: all 0.2s;
-    }
-    .platform-link:hover { background: rgba(96, 165, 250, 0.15); }
-
-    /* ---- Controls ---- */
-    .controls { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
-    .controls input {
-      flex: 1; min-width: 180px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 10px 14px;
-      color: var(--text); font-family: var(--font); font-size: 14px;
-      outline: none; transition: border-color 0.2s;
-    }
-    .controls input:focus { border-color: var(--accent); }
-    .controls input::placeholder { color: var(--text-dim); }
-
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 10px 20px; border: none; border-radius: var(--radius-sm);
-      font-family: var(--font); font-size: 14px; font-weight: 500;
-      cursor: pointer; transition: all 0.2s; white-space: nowrap;
-    }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #5a7af0; }
-    .btn-primary:disabled { background: var(--border-light); color: var(--text-dim); cursor: not-allowed; }
-    .btn-secondary {
-      background: var(--bg-elevated); color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover { background: var(--bg-card-hover); color: var(--text); }
-    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-green { background: var(--green); color: #000; font-weight: 600; }
-    .btn-green:hover { background: #2bc48a; }
-    .btn-green:disabled { background: var(--border-light); color: var(--text-dim); cursor: not-allowed; }
-    .btn svg {
-      width: 16px; height: 16px; stroke: currentColor; fill: none;
-      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
-    /* ---- Toolbar (sort + filters) ---- */
-    .toolbar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .toolbar-right { display: flex; align-items: center; gap: 8px; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
 
-    .sort-select {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 7px 12px;
-      color: var(--text-muted); font-family: var(--font); font-size: 13px;
-      outline: none; cursor: pointer; appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f9a' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 30px;
+    .app { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 48px 28px 100px; }
+
+    /* ---- Ambient glow ---- */
+    .glow {
+      position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(129,140,248,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
     }
 
-    .filter-tab {
-      padding: 6px 14px; border-radius: 20px;
-      border: 1px solid var(--border); background: transparent;
-      color: var(--text-muted); font-family: var(--font); font-size: 13px;
-      cursor: pointer; transition: all 0.2s;
+    /* ---- Header ---- */
+    .header { margin-bottom: 48px; animation: slideDown 0.6s ease; }
+    .header-row { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 8px; }
+    .logo {
+      font-family: var(--font-display); font-size: 32px; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-bright), var(--violet));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
     }
-    .filter-tab:hover { border-color: var(--border-light); color: var(--text); }
-    .filter-tab.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+    .logo-tag {
+      font-size: 12px; color: var(--text-tertiary); font-weight: 400;
+      padding-bottom: 5px; letter-spacing: 2px; text-transform: uppercase;
+    }
+    .header-line {
+      height: 1px; margin-top: 16px;
+      background: linear-gradient(90deg, var(--accent-dim), transparent 60%);
+    }
 
-    /* ---- Stats Row ---- */
-    .stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-    .stat-chip {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 8px 16px;
-      font-size: 13px; color: var(--text-muted);
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- Sections ---- */
+    .section { margin-bottom: 32px; animation: fadeUp 0.5s ease both; }
+    .section:nth-child(2) { animation-delay: 0.1s; }
+    .section:nth-child(3) { animation-delay: 0.15s; }
+    .section:nth-child(4) { animation-delay: 0.2s; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;
       display: flex; align-items: center; gap: 8px;
     }
-    .stat-chip .num { font-weight: 600; font-family: var(--mono); font-size: 15px; }
-    .stat-chip.green .num { color: var(--green); }
-    .stat-chip.amber .num { color: var(--amber); }
-    .stat-chip.blue .num { color: var(--blue); }
-
-    /* ---- Job Cards ---- */
-    .job-list { display: flex; flex-direction: column; gap: 10px; }
-    .job-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px 22px;
-      display: grid; grid-template-columns: 1fr auto;
-      gap: 12px; transition: all 0.2s; cursor: pointer;
+    .section-title::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
     }
-    .job-card:hover { border-color: var(--border-light); background: var(--bg-card-hover); }
-    .job-card.expanded { border-color: var(--accent); background: var(--bg-card-hover); }
 
-    .job-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .job-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .job-title { font-size: 15px; font-weight: 600; color: var(--text); }
-    .job-company { font-size: 14px; color: var(--text-muted); }
-    .job-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .job-meta-item {
-      font-size: 12px; color: var(--text-dim);
+    /* ---- Resume Upload ---- */
+    .resume-drop {
+      border: 1.5px dashed var(--border-hover);
+      border-radius: var(--radius);
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+    }
+    .resume-drop::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 0%, var(--accent-dim), transparent 70%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .resume-drop:hover { border-color: var(--accent); }
+    .resume-drop:hover::before { opacity: 1; }
+    .resume-drop.active {
+      border-style: solid; border-color: var(--emerald-border);
+      background: linear-gradient(180deg, rgba(52,211,153,0.04), var(--surface));
+    }
+    .resume-drop svg {
+      width: 28px; height: 28px; stroke-width: 1.5;
+      stroke: var(--text-tertiary); fill: none;
+      stroke-linecap: round; stroke-linejoin: round;
+      margin-bottom: 12px; position: relative;
+    }
+    .resume-drop.active svg { stroke: var(--emerald); }
+    .resume-drop h3 { font-size: 15px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; position: relative; }
+    .resume-drop.active h3 { color: var(--emerald); }
+    .resume-drop small { font-size: 12px; color: var(--text-tertiary); position: relative; }
+    .resume-drop input { display: none; }
+
+    .resume-info {
+      margin-top: 12px; padding: 12px 16px;
+      background: var(--bg-subtle); border-radius: var(--radius-xs);
+      font-size: 12px; color: var(--text-tertiary); line-height: 1.6;
+      max-height: 60px; overflow: hidden; position: relative;
+    }
+    .resume-info::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 24px;
+      background: linear-gradient(transparent, var(--bg-subtle));
+    }
+    .resume-btns { display: flex; gap: 6px; margin-top: 10px; }
+    .resume-btns button {
+      font-size: 11px; padding: 4px 12px; border-radius: var(--radius-xs);
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-tertiary); font-family: var(--font-body); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .resume-btns button:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+    .resume-btns button.rm:hover { color: var(--rose); border-color: var(--rose-border); }
+
+    /* ---- Quick Links ---- */
+    .quick-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .qlink {
+      font-size: 12px; padding: 6px 14px; border-radius: 100px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-tertiary); text-decoration: none;
+      transition: all 0.25s; font-weight: 400;
+    }
+    .qlink:hover {
+      border-color: var(--sky-border); color: var(--sky);
+      background: var(--sky-dim);
+    }
+
+    /* ---- Search Bar ---- */
+    .search-bar {
+      display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1; min-width: 160px; padding: 11px 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: var(--font-body); font-size: 14px; font-weight: 400;
+      outline: none; transition: all 0.25s;
+    }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .search-input::placeholder { color: var(--text-tertiary); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 11px 22px; border: none; border-radius: var(--radius-sm);
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s; white-space: nowrap;
+      letter-spacing: 0.2px;
+    }
+    .btn svg {
+      width: 15px; height: 15px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: #6d7af0; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(129,140,248,0.25); }
+    .btn-accent:disabled { background: var(--border); color: var(--text-tertiary); cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-glow {
+      background: linear-gradient(135deg, var(--emerald), #2dd4bf);
+      color: #000; font-weight: 700;
+    }
+    .btn-glow:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(52,211,153,0.3); }
+    .btn-glow:disabled { background: var(--border); color: var(--text-tertiary); cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-ghost {
+      background: var(--surface); color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
+
+    /* ---- Stats Strip ---- */
+    .stats { display: flex; gap: 16px; flex-wrap: wrap; }
+    .stat {
+      display: flex; align-items: baseline; gap: 6px;
+      font-size: 13px; color: var(--text-tertiary);
+    }
+    .stat b {
+      font-family: var(--font-mono); font-size: 20px; font-weight: 500;
+      letter-spacing: -0.5px;
+    }
+    .stat.em b { color: var(--emerald); }
+    .stat.am b { color: var(--amber); }
+    .stat.sk b { color: var(--sky); }
+
+    /* ---- Toolbar ---- */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pill {
+      padding: 5px 13px; border-radius: 100px; font-size: 12px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-tertiary); font-family: var(--font-body);
+      cursor: pointer; transition: all 0.2s; font-weight: 400;
+    }
+    .pill:hover { border-color: var(--border-hover); color: var(--text-secondary); }
+    .pill.on { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .pill.linkedin.on { border-color: var(--linkedin); color: #3b9af5; background: rgba(10,102,194,0.12); }
+    .pill.indeed.on { border-color: var(--indeed); color: #5b9cf8; background: rgba(33,100,243,0.1); }
+
+    .sort-dd {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-xs); padding: 6px 28px 6px 12px;
+      color: var(--text-secondary); font-family: var(--font-body);
+      font-size: 12px; outline: none; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23555a72' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+
+    /* ---- Job Card ---- */
+    .jobs { display: flex; flex-direction: column; gap: 8px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 12px; cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card:hover { background: var(--surface-hover); border-color: var(--border-hover); transform: translateY(-1px); }
+    .card.open { border-color: var(--accent); background: var(--surface-active); }
+
+    .card-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .card-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .badge {
+      font-size: 10px; font-weight: 600; padding: 2px 9px;
+      border-radius: 100px; border: 1px solid; letter-spacing: 0.3px;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .badge-ft { color: var(--emerald); background: var(--emerald-dim); border-color: var(--emerald-border); }
+    .badge-ct { color: var(--violet); background: var(--violet-dim); border-color: var(--violet-border); }
+    .badge-in { color: var(--sky); background: var(--sky-dim); border-color: var(--sky-border); }
+    .badge-pt { color: var(--amber); background: var(--amber-dim); border-color: var(--amber-border); }
+    .badge-tp { color: var(--rose); background: var(--rose-dim); border-color: var(--rose-border); }
+
+    .card-company { font-size: 13px; color: var(--text-secondary); font-weight: 400; }
+    .card-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .meta {
+      font-size: 11px; color: var(--text-tertiary);
       display: flex; align-items: center; gap: 4px;
     }
-    .job-meta-item svg {
-      width: 13px; height: 13px; stroke: currentColor; fill: none;
+    .meta svg {
+      width: 12px; height: 12px; stroke: currentColor; fill: none;
       stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
     }
 
-    .type-badge {
-      font-size: 11px; font-weight: 500; padding: 3px 10px;
-      border-radius: 20px; border: 1px solid; white-space: nowrap;
+    .source-dots { display: flex; gap: 4px; margin-left: 4px; }
+    .source-dot {
+      font-size: 9px; padding: 1px 7px; border-radius: 100px;
+      font-weight: 600; letter-spacing: 0.3px;
     }
-    .type-ft { color: var(--green); background: var(--green-bg); border-color: var(--green-border); }
-    .type-contract { color: var(--purple); background: var(--purple-bg); border-color: var(--purple-border); }
-    .type-intern { color: var(--blue); background: var(--blue-bg); border-color: var(--blue-border); }
-    .type-pt { color: var(--amber); background: var(--amber-bg); border-color: var(--amber-border); }
-    .type-temp { color: var(--red); background: var(--red-bg); border-color: var(--red-border); }
+    .source-dot.li { background: rgba(10,102,194,0.15); color: #5b9cf8; }
+    .source-dot.ind { background: rgba(33,100,243,0.12); color: #7baffa; }
+    .source-dot.gl { background: rgba(52,211,153,0.1); color: var(--emerald); }
+    .source-dot.other { background: var(--accent-dim); color: var(--text-tertiary); }
 
-    .score-col {
-      display: flex; flex-direction: column; align-items: flex-end;
-      justify-content: center; gap: 4px; min-width: 70px;
-    }
-    .score-ring { width: 48px; height: 48px; position: relative; }
-    .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-    .score-ring circle { fill: none; stroke-width: 3; }
-    .score-ring .bg { stroke: var(--border); }
-    .score-ring .fill { stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
-    .score-val {
+    /* ---- Score ring ---- */
+    .score-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 58px; }
+    .ring { width: 50px; height: 50px; position: relative; }
+    .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring circle { fill: none; stroke-width: 2.5; }
+    .ring .track { stroke: var(--border); }
+    .ring .bar { stroke-linecap: round; transition: stroke-dashoffset 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+    .ring-num {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
-      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      font-family: var(--font-mono); font-size: 14px; font-weight: 500;
     }
-    .score-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-dim); }
+    .ring-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-tertiary); }
 
-    .job-details { grid-column: 1 / -1; padding-top: 14px; border-top: 1px solid var(--border); margin-top: 6px; }
-    .job-reason {
-      font-size: 13px; color: var(--text-muted); line-height: 1.6;
-      margin-bottom: 12px; padding: 10px 14px;
-      background: var(--accent-glow); border-radius: var(--radius-sm);
+    /* ---- Expanded card ---- */
+    .card-detail {
+      grid-column: 1 / -1; padding-top: 14px;
+      border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .ai-insight {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+      padding: 10px 14px; margin-bottom: 12px;
+      background: var(--accent-dim); border-radius: var(--radius-xs);
       border-left: 3px solid var(--accent);
     }
-    .job-reason strong { color: var(--accent); font-weight: 500; }
-    .job-desc {
-      font-size: 13px; color: var(--text-dim); line-height: 1.7;
-      max-height: 160px; overflow-y: auto; margin-bottom: 12px;
+    .ai-insight strong { color: var(--accent-bright); font-weight: 500; }
+    .card-desc {
+      font-size: 12px; color: var(--text-tertiary); line-height: 1.7;
+      max-height: 140px; overflow-y: auto; margin-bottom: 14px;
       white-space: pre-wrap;
     }
-    .job-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500;
+    .apply-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .apply-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; padding: 6px 14px;
+      border-radius: var(--radius-xs); text-decoration: none;
+      transition: all 0.2s;
     }
-    .job-link:hover { text-decoration: underline; }
-    .job-link svg {
-      width: 14px; height: 14px; stroke: currentColor; fill: none;
+    .apply-link svg {
+      width: 12px; height: 12px; stroke: currentColor; fill: none;
       stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
     }
+    .apply-link.li-link { background: rgba(10,102,194,0.15); color: #5b9cf8; }
+    .apply-link.li-link:hover { background: rgba(10,102,194,0.25); }
+    .apply-link.ind-link { background: rgba(33,100,243,0.12); color: #7baffa; }
+    .apply-link.ind-link:hover { background: rgba(33,100,243,0.2); }
+    .apply-link.other-link { background: var(--accent-dim); color: var(--accent-bright); }
+    .apply-link.other-link:hover { background: rgba(129,140,248,0.2); }
 
-    /* ---- Loading ---- */
-    .loading-state {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 80px 20px; gap: 20px;
-    }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid var(--border);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 14px; color: var(--text-muted); }
-    .loading-sub { font-size: 12px; color: var(--text-dim); }
+    /* ---- States ---- */
+    .state { display: flex; flex-direction: column; align-items: center; padding: 80px 20px; gap: 16px; }
+    .spin { width: 32px; height: 32px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.7s linear infinite; }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    .state-text { font-size: 14px; color: var(--text-secondary); }
+    .state-sub { font-size: 12px; color: var(--text-tertiary); }
+    .prog { width: 180px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
 
-    .progress-bar-wrap {
-      width: 200px; height: 4px; background: var(--border);
-      border-radius: 2px; overflow: hidden; margin-top: 4px;
+    .empty { text-align: center; padding: 80px 20px; }
+    .empty svg {
+      width: 40px; height: 40px; stroke: var(--border-hover); fill: none;
+      stroke-width: 1.5; margin-bottom: 14px;
     }
-    .progress-bar-fill {
-      height: 100%; background: var(--accent); border-radius: 2px;
-      transition: width 0.3s ease;
-    }
+    .empty p { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+    .empty small { font-size: 12px; color: var(--text-tertiary); }
 
-    .empty-state { text-align: center; padding: 80px 20px; color: var(--text-dim); }
-    .empty-state svg {
-      width: 48px; height: 48px; stroke: var(--border-light); fill: none;
-      stroke-width: 1.5; margin-bottom: 16px;
+    .err {
+      background: var(--rose-dim); border: 1px solid var(--rose-border);
+      border-radius: var(--radius-sm); padding: 11px 16px;
+      margin-bottom: 18px; color: var(--rose); font-size: 13px;
+      display: flex; align-items: center; gap: 8px;
     }
-    .empty-state p { font-size: 15px; margin-bottom: 6px; color: var(--text-muted); }
-    .empty-state small { font-size: 13px; }
+    .err svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
 
-    .error-banner {
-      background: var(--red-bg); border: 1px solid var(--red-border);
-      border-radius: var(--radius-sm); padding: 12px 18px;
-      margin-bottom: 20px; color: var(--red); font-size: 13px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .error-banner svg {
-      width: 18px; height: 18px; stroke: currentColor; fill: none;
-      stroke-width: 2; flex-shrink: 0;
-    }
-
-    .fade-in { animation: fadeIn 0.3s ease forwards; opacity: 0; }
-    @keyframes fadeIn { to { opacity: 1; } }
+    .fade { animation: fadeUp 0.35s ease both; }
 
     @media (max-width: 640px) {
-      .app-shell { padding: 24px 16px 60px; }
-      .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-      .job-card { grid-template-columns: 1fr; }
-      .score-col { flex-direction: row; align-items: center; gap: 10px; }
-      .controls { flex-direction: column; }
+      .app { padding: 28px 16px 60px; }
+      .card { grid-template-columns: 1fr; }
+      .score-area { flex-direction: row; gap: 8px; }
+      .search-bar { flex-direction: column; }
       .toolbar { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
+  <div class="glow"></div>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect, useCallback, useRef } = React;
+    const { useState, useCallback, useRef } = React;
 
-    // ---- Config ----
-    const PLATFORM_LINKS = [
+    const LINKS = [
       { label: "Financial Analyst — Toronto", url: "https://ca.indeed.com/jobs?q=financial+analyst&l=Toronto%2C+ON" },
       { label: "Entry Level Financial Analyst", url: "https://ca.indeed.com/jobs?q=entry+level+financial+analyst&l=Toronto%2C+ON" },
       { label: "FP&A Analyst", url: "https://ca.indeed.com/jobs?q=fp%26a+analyst&l=Toronto%2C+ON" },
@@ -377,113 +423,95 @@
       { label: "Finance Internship", url: "https://ca.indeed.com/jobs?q=finance+internship&l=Toronto%2C+ON" },
     ];
 
-    const TYPE_MAP = {
-      "Full-time": "type-ft",
-      "Contract": "type-contract",
-      "Internship": "type-intern",
-      "Part-time": "type-pt",
-      "Temporary": "type-temp",
-      "Contractor": "type-contract",
-    };
+    const BADGE = { "Full-time":"badge-ft","Contract":"badge-ct","Contractor":"badge-ct","Internship":"badge-in","Part-time":"badge-pt","Temporary":"badge-tp" };
 
-    // ---- Parse posted time to sortable number (lower = more recent) ----
-    function postedToHours(posted) {
-      if (!posted) return 99999;
-      const lower = posted.toLowerCase();
-      const numMatch = lower.match(/(\d+)/);
-      const num = numMatch ? parseInt(numMatch[1]) : 99999;
-      if (lower.includes("just") || lower.includes("now")) return 0;
-      if (lower.includes("hour")) return num;
-      if (lower.includes("day")) return num * 24;
-      if (lower.includes("week")) return num * 24 * 7;
-      if (lower.includes("month")) return num * 24 * 30;
+    function toHours(p) {
+      if (!p) return 99999;
+      const l = p.toLowerCase(), m = l.match(/(\d+)/), n = m ? +m[1] : 99999;
+      if (l.includes("just")||l.includes("now")) return 0;
+      if (l.includes("hour")) return n; if (l.includes("day")) return n*24;
+      if (l.includes("week")) return n*168; if (l.includes("month")) return n*720;
       return 99999;
     }
+    function sColor(s) { return s>=75?"var(--emerald)":s>=50?"var(--amber)":"var(--rose)"; }
 
-    function scoreColor(s) {
-      if (s >= 75) return "var(--green)";
-      if (s >= 50) return "var(--amber)";
-      return "var(--red)";
+    function sourceClass(name) {
+      const l = name.toLowerCase();
+      if (l.includes("linkedin")) return "li";
+      if (l.includes("indeed")) return "ind";
+      if (l.includes("glassdoor")) return "gl";
+      return "other";
+    }
+    function linkClass(name) {
+      const l = name.toLowerCase();
+      if (l.includes("linkedin")) return "li-link";
+      if (l.includes("indeed")) return "ind-link";
+      return "other-link";
     }
 
-    // ---- PDF text extraction ----
-    async function extractPdfText(file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let text = "";
+    async function readPdf(file) {
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let t = "";
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map((item) => item.str).join(" ") + "\n";
+        const pg = await pdf.getPage(i);
+        const c = await pg.getTextContent();
+        t += c.items.map(x => x.str).join(" ") + "\n";
       }
-      return text.trim();
+      return t.trim();
     }
 
-    // ---- ScoreRing ----
-    function ScoreRing({ score }) {
-      const r = 20;
-      const circ = 2 * Math.PI * r;
-      const offset = circ - (score / 100) * circ;
-      const color = scoreColor(score);
+    function Ring({ score }) {
+      const r = 21, c = 2*Math.PI*r, o = c - (score/100)*c, col = sColor(score);
       return (
-        <div className="score-ring">
-          <svg viewBox="0 0 48 48">
-            <circle className="bg" cx="24" cy="24" r={r} />
-            <circle className="fill" cx="24" cy="24" r={r} stroke={color}
-              strokeDasharray={circ} strokeDashoffset={offset} />
-          </svg>
-          <div className="score-val" style={{ color }}>{score}</div>
+        <div className="ring">
+          <svg viewBox="0 0 50 50"><circle className="track" cx="25" cy="25" r={r}/><circle className="bar" cx="25" cy="25" r={r} stroke={col} strokeDasharray={c} strokeDashoffset={o}/></svg>
+          <div className="ring-num" style={{color:col}}>{score}</div>
         </div>
       );
     }
 
-    // ---- JobCard ----
-    function JobCard({ job, score, reason, expanded, onToggle }) {
-      const typeClass = TYPE_MAP[job.type] || "type-ft";
+    function Card({ job, score, reason, open, toggle }) {
+      const bc = BADGE[job.type] || "badge-ft";
+      const sources = job.sources || [];
+      const applyLinks = job.applyLinks || {};
       return (
-        <div className={`job-card ${expanded ? "expanded" : ""}`} onClick={onToggle}>
-          <div className="job-main">
-            <div className="job-title-row">
-              <span className="job-title">{job.title}</span>
-              <span className={`type-badge ${typeClass}`}>{job.type}</span>
+        <div className={`card ${open?"open":""}`} onClick={toggle}>
+          <div className="card-body">
+            <div className="card-top">
+              <span className="card-title">{job.title}</span>
+              <span className={`badge ${bc}`}>{job.type}</span>
             </div>
-            <div className="job-company">{job.company}</div>
-            <div className="job-meta">
-              <span className="job-meta-item">
-                <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                {job.location}
-              </span>
-              {job.salary && (
-                <span className="job-meta-item">
-                  <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  {job.salary}
-                </span>
-              )}
-              {job.postedAt && (
-                <span className="job-meta-item">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  {job.postedAt}
+            <div className="card-company">{job.company}</div>
+            <div className="card-meta">
+              <span className="meta"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>{job.location}</span>
+              {job.salary && <span className="meta"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>{job.salary}</span>}
+              {job.postedAt && <span className="meta"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{job.postedAt}</span>}
+              {sources.length > 0 && (
+                <span className="source-dots">
+                  {sources.slice(0,3).map((s,i) => <span key={i} className={`source-dot ${sourceClass(s)}`}>{s.split('.')[0].split(' ')[0]}</span>)}
                 </span>
               )}
             </div>
           </div>
-          {score !== undefined && (
-            <div className="score-col">
-              <ScoreRing score={score} />
-              <span className="score-label">Match</span>
-            </div>
-          )}
-          {expanded && (
-            <div className="job-details fade-in">
-              {reason && (
-                <div className="job-reason"><strong>AI Insight:</strong> {reason}</div>
+          {score !== undefined && <div className="score-area"><Ring score={score}/><span className="ring-label">Match</span></div>}
+          {open && (
+            <div className="card-detail fade">
+              {reason && <div className="ai-insight"><strong>AI Insight</strong> — {reason}</div>}
+              {job.description && <div className="card-desc">{job.description}</div>}
+              {Object.keys(applyLinks).length > 0 && (
+                <div className="apply-links">
+                  {Object.entries(applyLinks).map(([name, url]) => url && (
+                    <a key={name} className={`apply-link ${linkClass(name)}`} href={url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}>
+                      Apply on {name}
+                      <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                  ))}
+                </div>
               )}
-              {job.description && <div className="job-desc">{job.description}</div>}
-              {job.url && (
-                <a className="job-link" href={job.url} target="_blank" rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}>
-                  Apply Now
-                  <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              {Object.keys(applyLinks).length === 0 && job.url && (
+                <a className="apply-link other-link" href={job.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}>
+                  Apply Now <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </a>
               )}
             </div>
@@ -492,372 +520,209 @@
       );
     }
 
-    // ---- Main App ----
     function App() {
       const [jobs, setJobs] = useState([]);
       const [scores, setScores] = useState({});
       const [loading, setLoading] = useState(false);
       const [analyzing, setAnalyzing] = useState(false);
-      const [analyzeProgress, setAnalyzeProgress] = useState(0);
+      const [progress, setProgress] = useState(0);
       const [error, setError] = useState(null);
       const [expanded, setExpanded] = useState(null);
       const [filter, setFilter] = useState("all");
+      const [sourceFilter, setSourceFilter] = useState("all");
       const [sortBy, setSortBy] = useState("newest");
-      const [keywords, setKeywords] = useState("financial analyst");
-      const [location, setLocation] = useState("Toronto, Ontario, Canada");
-
-      // Resume state
+      const [kw, setKw] = useState("financial analyst");
+      const [loc, setLoc] = useState("Toronto, Ontario, Canada");
       const [resumeText, setResumeText] = useState("");
-      const [resumeFileName, setResumeFileName] = useState("");
-      const fileInputRef = useRef(null);
+      const [resumeName, setResumeName] = useState("");
+      const fileRef = useRef(null);
 
-      // ---- Handle resume upload ----
-      const handleResumeUpload = useCallback(async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setResumeFileName(file.name);
-
+      const onFile = useCallback(async (e) => {
+        const f = e.target.files?.[0]; if (!f) return;
+        setResumeName(f.name);
         try {
-          if (file.type === "application/pdf") {
-            const text = await extractPdfText(file);
-            setResumeText(text);
-          } else if (file.type === "text/plain" || file.name.endsWith(".txt")) {
-            const text = await file.text();
-            setResumeText(text);
-          } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.name.endsWith(".docx")) {
-            // For docx, read as text (basic extraction)
-            const text = await file.text();
-            // Filter out binary garbage, keep readable parts
-            const clean = text.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s{3,}/g, " ").trim();
-            setResumeText(clean.substring(0, 5000));
-          } else {
-            const text = await file.text();
-            setResumeText(text);
-          }
-        } catch (err) {
-          console.error("Error reading resume:", err);
-          setError("Failed to read resume file. Try a PDF or TXT file.");
-        }
+          if (f.type === "application/pdf") { setResumeText(await readPdf(f)); }
+          else { setResumeText(await f.text()); }
+        } catch { setError("Couldn't read that file — try a PDF or TXT."); }
       }, []);
 
-      // ---- Fetch Jobs ----
-      const fetchJobs = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        setJobs([]);
-        setScores({});
-        setExpanded(null);
-
+      const search = useCallback(async () => {
+        setLoading(true); setError(null); setJobs([]); setScores({}); setExpanded(null);
         try {
-          const res = await fetch("/api/jobs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ keywords, location }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Failed to fetch jobs");
-          setJobs(data);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      }, [keywords, location]);
+          const r = await fetch("/api/jobs", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({keywords:kw,location:loc}) });
+          const d = await r.json(); if (!r.ok) throw new Error(d.error);
+          setJobs(d);
+        } catch (e) { setError(e.message); }
+        finally { setLoading(false); }
+      }, [kw, loc]);
 
-      // ---- Analyze Jobs ----
-      const analyzeJobs = useCallback(async () => {
-        if (jobs.length === 0) return;
-        if (!resumeText.trim()) {
-          setError("Please upload your resume first before running AI Match");
-          return;
-        }
-
-        setAnalyzing(true);
-        setAnalyzeProgress(10);
-        setError(null);
-
+      const analyze = useCallback(async () => {
+        if (!jobs.length || !resumeText.trim()) { setError("Upload your resume first"); return; }
+        setAnalyzing(true); setProgress(10); setError(null);
+        const iv = setInterval(() => setProgress(p => Math.min(p+4, 90)), 1500);
         try {
-          // Simulate progress
-          const progressInterval = setInterval(() => {
-            setAnalyzeProgress(prev => Math.min(prev + 5, 90));
-          }, 2000);
-
-          const res = await fetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resume: resumeText, jobs }),
-          });
-
-          clearInterval(progressInterval);
-          setAnalyzeProgress(95);
-
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Analysis failed");
-
-          const map = {};
-          data.forEach(s => { map[s.id] = s; });
-          setScores(map);
-          setAnalyzeProgress(100);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setAnalyzing(false);
-          setAnalyzeProgress(0);
-        }
+          const r = await fetch("/api/analyze", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({resume:resumeText,jobs}) });
+          clearInterval(iv); setProgress(95);
+          const d = await r.json(); if (!r.ok) throw new Error(d.error);
+          const m = {}; d.forEach(s => m[s.id] = s); setScores(m); setProgress(100);
+        } catch (e) { clearInterval(iv); setError(e.message); }
+        finally { setAnalyzing(false); setProgress(0); }
       }, [jobs, resumeText]);
 
-      // ---- Sort + Filter ----
-      const hasScores = Object.keys(scores).length > 0;
+      const has = Object.keys(scores).length > 0;
 
-      const processedJobs = [...jobs].map(j => ({
-        ...j,
-        _score: scores[j.id]?.score,
-        _hours: postedToHours(j.postedAt),
-      }));
+      // Collect all unique sources across jobs
+      const allSources = new Set();
+      jobs.forEach(j => (j.sources||[]).forEach(s => allSources.add(s.toLowerCase().includes("linkedin")?"LinkedIn":s.toLowerCase().includes("indeed")?"Indeed":s)));
 
-      // Sort
-      processedJobs.sort((a, b) => {
-        switch (sortBy) {
-          case "newest": return a._hours - b._hours;
-          case "oldest": return b._hours - a._hours;
-          case "score-high": return (b._score || 0) - (a._score || 0);
-          case "score-low": return (a._score || 0) - (b._score || 0);
-          case "company": return a.company.localeCompare(b.company);
-          default: return 0;
+      const proc = [...jobs].map(j => ({ ...j, _s: scores[j.id]?.score, _h: toHours(j.postedAt) }));
+      proc.sort((a,b) => {
+        if (sortBy==="newest") return a._h - b._h;
+        if (sortBy==="oldest") return b._h - a._h;
+        if (sortBy==="score-hi") return (b._s||0)-(a._s||0);
+        if (sortBy==="score-lo") return (a._s||0)-(b._s||0);
+        if (sortBy==="company") return a.company.localeCompare(b.company);
+        return 0;
+      });
+
+      const filtered = proc.filter(j => {
+        // Type filter
+        if (filter==="top" && (j._s||0)<75) return false;
+        if (filter==="mid" && ((j._s||0)<50||(j._s||0)>=75)) return false;
+        if (filter==="low" && (j._s||0)>=50) return false;
+        if (["Full-time","Contract","Internship","Temporary","Part-time"].includes(filter) && j.type!==filter) return false;
+        // Source filter
+        if (sourceFilter !== "all") {
+          const srcs = (j.sources||[]).map(s=>s.toLowerCase());
+          if (sourceFilter === "linkedin" && !srcs.some(s=>s.includes("linkedin"))) return false;
+          if (sourceFilter === "indeed" && !srcs.some(s=>s.includes("indeed"))) return false;
         }
+        return true;
       });
 
-      // Filter
-      const filteredJobs = processedJobs.filter(j => {
-        if (filter === "all") return true;
-        if (filter === "top") return (j._score || 0) >= 75;
-        if (filter === "mid") return (j._score || 0) >= 50 && (j._score || 0) < 75;
-        if (filter === "low") return (j._score || 0) < 50;
-        return j.type === filter;
-      });
-
-      const topCount = processedJobs.filter(j => (j._score || 0) >= 75).length;
-      const avgScore = hasScores
-        ? Math.round(processedJobs.reduce((s, j) => s + (j._score || 0), 0) / processedJobs.length)
-        : 0;
+      const topN = proc.filter(j=>(j._s||0)>=75).length;
+      const avg = has ? Math.round(proc.reduce((a,j)=>a+(j._s||0),0)/proc.length) : 0;
 
       return (
-        <div className="app-shell">
-          {/* Header */}
+        <div className="app">
           <div className="header">
-            <div className="header-left">
-              <div className="logo-mark">DJ</div>
-              <h1>Job Match <span>Engine</span></h1>
+            <div className="header-row">
+              <div className="logo">Job Match Engine</div>
+              <div className="logo-tag">by Danyal</div>
             </div>
+            <div className="header-line"/>
           </div>
 
-          {/* Resume Upload */}
-          <div className="resume-section">
-            <div className="section-label">Your Resume</div>
-            <div
-              className={`resume-upload-area ${resumeText ? "has-resume" : ""}`}
-              onClick={() => !resumeText && fileInputRef.current?.click()}
-            >
-              <input type="file" ref={fileInputRef}
-                accept=".pdf,.txt,.doc,.docx"
-                onChange={handleResumeUpload} />
+          {/* Resume */}
+          <div className="section">
+            <div className="section-title">Resume</div>
+            <div className={`resume-drop ${resumeText?"active":""}`} onClick={()=>!resumeText&&fileRef.current?.click()}>
+              <input type="file" ref={fileRef} accept=".pdf,.txt,.doc,.docx" onChange={onFile}/>
               {resumeText ? (
-                <>
-                  <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                  </svg>
-                  <p>{resumeFileName} uploaded</p>
-                  <small>Resume loaded — ready for AI matching</small>
-                </>
+                <><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h3>{resumeName}</h3><small>Resume loaded — ready for AI matching</small></>
               ) : (
-                <>
-                  <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                  <p>Drop your resume here or click to upload</p>
-                  <small>Supports PDF, TXT, DOCX</small>
-                </>
+                <><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><h3>Upload your resume</h3><small>PDF or TXT — used for AI job matching</small></>
               )}
             </div>
             {resumeText && (
-              <>
-                <div className="resume-preview">{resumeText.substring(0, 300)}</div>
-                <div className="resume-actions">
-                  <button onClick={() => fileInputRef.current?.click()}>Replace</button>
-                  <button className="danger" onClick={() => { setResumeText(""); setResumeFileName(""); setScores({}); }}>Remove</button>
-                </div>
-              </>
+              <><div className="resume-info">{resumeText.substring(0,250)}</div>
+              <div className="resume-btns"><button onClick={()=>fileRef.current?.click()}>Replace</button><button className="rm" onClick={()=>{setResumeText("");setResumeName("");setScores({});}}>Remove</button></div></>
             )}
           </div>
 
-          {/* Platform Links */}
-          <div className="platform-section">
-            <div className="platform-title">Quick Search Links — Indeed</div>
-            <div className="platform-links">
-              {PLATFORM_LINKS.map(link => (
-                <a key={link.label} className="platform-link" href={link.url}
-                  target="_blank" rel="noopener noreferrer">{link.label}</a>
-              ))}
+          {/* Quick Links */}
+          <div className="section">
+            <div className="section-title">Quick Links</div>
+            <div className="quick-links">
+              {LINKS.map(l=><a key={l.label} className="qlink" href={l.url} target="_blank" rel="noopener noreferrer">{l.label}</a>)}
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="controls">
-            <input type="text" placeholder="Job title or keywords..."
-              value={keywords} onChange={e => setKeywords(e.target.value)} />
-            <input type="text" placeholder="Location..."
-              value={location} onChange={e => setLocation(e.target.value)} />
-            <button className="btn btn-primary" onClick={fetchJobs} disabled={loading}>
-              {loading ? (
-                <><svg viewBox="0 0 24 24" style={{animation:"spin 0.8s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Searching...</>
-              ) : (
-                <><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search Jobs</>
-              )}
-            </button>
-            <button className="btn btn-green" onClick={analyzeJobs}
-              disabled={analyzing || jobs.length === 0 || !resumeText}>
-              {analyzing ? (
-                <><svg viewBox="0 0 24 24" style={{animation:"spin 0.8s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Analyzing...</>
-              ) : (
-                <><svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>AI Match</>
-              )}
-            </button>
+          {/* Search */}
+          <div className="section">
+            <div className="section-title">Search</div>
+            <div className="search-bar">
+              <input className="search-input" placeholder="Keywords..." value={kw} onChange={e=>setKw(e.target.value)}/>
+              <input className="search-input" placeholder="Location..." value={loc} onChange={e=>setLoc(e.target.value)}/>
+              <button className="btn btn-accent" onClick={search} disabled={loading}>
+                {loading?<><svg viewBox="0 0 24 24" style={{animation:"sp 0.7s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Searching...</>:<><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</>}
+              </button>
+              <button className="btn btn-glow" onClick={analyze} disabled={analyzing||!jobs.length||!resumeText}>
+                {analyzing?<><svg viewBox="0 0 24 24" style={{animation:"sp 0.7s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Matching...</>:<><svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>AI Match</>}
+              </button>
+            </div>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="error-banner">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              {error}
-            </div>
-          )}
+          {error && <div className="err"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{error}</div>}
 
           {/* Stats */}
-          {jobs.length > 0 && !loading && (
-            <div className="stats-row fade-in">
-              <div className="stat-chip blue">
-                <span className="num">{jobs.length}</span> jobs found
+          {jobs.length>0 && !loading && (
+            <div className="section fade">
+              <div className="stats">
+                <div className="stat sk"><b>{jobs.length}</b> jobs</div>
+                {has && <><div className="stat em"><b>{topN}</b> strong matches</div><div className="stat am"><b>{avg}</b> avg score</div></>}
               </div>
-              {hasScores && (
-                <>
-                  <div className="stat-chip green">
-                    <span className="num">{topCount}</span> strong matches
-                  </div>
-                  <div className="stat-chip amber">
-                    <span className="num">{avgScore}</span> avg score
-                  </div>
-                </>
-              )}
             </div>
           )}
 
-          {/* Toolbar: Sort + Filters */}
-          {jobs.length > 0 && !loading && !analyzing && (
+          {/* Toolbar */}
+          {jobs.length>0 && !loading && !analyzing && (
             <div className="toolbar">
               <div className="toolbar-left">
-                {hasScores && (
-                  <>
-                    {[
-                      { key: "all", label: "All" },
-                      { key: "top", label: "75+" },
-                      { key: "mid", label: "50–74" },
-                      { key: "low", label: "Under 50" },
-                    ].map(f => (
-                      <button key={f.key}
-                        className={`filter-tab ${filter === f.key ? "active" : ""}`}
-                        onClick={() => setFilter(f.key)}>{f.label}</button>
-                    ))}
-                  </>
-                )}
-                {[
-                  { key: "Full-time", label: "Full-time" },
-                  { key: "Internship", label: "Internship" },
-                  { key: "Contract", label: "Contract" },
-                  { key: "Temporary", label: "Temporary" },
-                ].map(f => (
-                  <button key={f.key}
-                    className={`filter-tab ${filter === f.key ? "active" : ""}`}
-                    onClick={() => setFilter(filter === f.key ? "all" : f.key)}>{f.label}</button>
+                {/* Source filters */}
+                <button className={`pill ${sourceFilter==="all"?"on":""}`} onClick={()=>setSourceFilter("all")}>All Sources</button>
+                {allSources.has("LinkedIn") && <button className={`pill linkedin ${sourceFilter==="linkedin"?"on":""}`} onClick={()=>setSourceFilter(sourceFilter==="linkedin"?"all":"linkedin")}>LinkedIn</button>}
+                {allSources.has("Indeed") && <button className={`pill indeed ${sourceFilter==="indeed"?"on":""}`} onClick={()=>setSourceFilter(sourceFilter==="indeed"?"all":"indeed")}>Indeed</button>}
+                <span style={{width:1,height:20,background:"var(--border)",margin:"0 4px"}}/>
+                {/* Score filters */}
+                {has && <>
+                  {["all","top","mid","low"].map(k=>(
+                    <button key={k} className={`pill ${filter===k?"on":""}`}
+                      onClick={()=>setFilter(k)}>{k==="all"?"All":(k==="top"?"75+":(k==="mid"?"50–74":"<50"))}</button>
+                  ))}
+                </>}
+                {/* Type filters */}
+                {["Full-time","Contract","Internship","Temporary"].map(t=>(
+                  <button key={t} className={`pill ${filter===t?"on":""}`}
+                    onClick={()=>setFilter(filter===t?"all":t)}>{t}</button>
                 ))}
               </div>
-              <div className="toolbar-right">
-                <select className="sort-select" value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}>
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  {hasScores && <option value="score-high">Highest match</option>}
-                  {hasScores && <option value="score-low">Lowest match</option>}
-                  <option value="company">Company A–Z</option>
-                </select>
-              </div>
+              <select className="sort-dd" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                {has && <option value="score-hi">Highest match</option>}
+                {has && <option value="score-lo">Lowest match</option>}
+                <option value="company">Company A–Z</option>
+              </select>
             </div>
           )}
 
-          {/* Loading */}
-          {loading && (
-            <div className="loading-state">
-              <div className="spinner" />
-              <div className="loading-text">Searching Indeed for jobs...</div>
-              <div className="loading-sub">Fetching up to 50 results</div>
-            </div>
+          {loading && <div className="state"><div className="spin"/><div className="state-text">Searching for jobs...</div><div className="state-sub">Fetching up to 50 results</div></div>}
+          {analyzing && <div className="state"><div className="spin"/><div className="state-text">AI is scoring {jobs.length} jobs...</div><div className="state-sub">Matching against your resume</div><div className="prog"><div className="prog-fill" style={{width:`${progress}%`}}/></div></div>}
+
+          {!loading && !analyzing && !jobs.length && !error && (
+            <div className="empty"><svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg><p>No jobs yet</p><small>Upload your resume and search to get started</small></div>
           )}
 
-          {analyzing && (
-            <div className="loading-state">
-              <div className="spinner" />
-              <div className="loading-text">Claude is analyzing job fit...</div>
-              <div className="loading-sub">Scoring {jobs.length} jobs against your resume</div>
-              <div className="progress-bar-wrap">
-                <div className="progress-bar-fill" style={{ width: `${analyzeProgress}%` }} />
-              </div>
-            </div>
-          )}
-
-          {/* Empty */}
-          {!loading && !analyzing && jobs.length === 0 && !error && (
-            <div className="empty-state">
-              <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg>
-              <p>No jobs loaded yet</p>
-              <small>Upload your resume, enter keywords, then Search Jobs</small>
-            </div>
-          )}
-
-          {/* Job List */}
-          {!loading && !analyzing && filteredJobs.length > 0 && (
-            <div className="job-list">
-              {filteredJobs.map((job, i) => (
-                <div key={job.id} className="fade-in" style={{ animationDelay: `${Math.min(i * 30, 500)}ms` }}>
-                  <JobCard
-                    job={job}
-                    score={scores[job.id]?.score}
-                    reason={scores[job.id]?.reason}
-                    expanded={expanded === job.id}
-                    onToggle={() => setExpanded(expanded === job.id ? null : job.id)}
-                  />
+          {!loading && !analyzing && filtered.length > 0 && (
+            <div className="jobs">
+              {filtered.map((j,i) => (
+                <div key={j.id} className="fade" style={{animationDelay:`${Math.min(i*25,400)}ms`}}>
+                  <Card job={j} score={scores[j.id]?.score} reason={scores[j.id]?.reason}
+                    open={expanded===j.id} toggle={()=>setExpanded(expanded===j.id?null:j.id)}/>
                 </div>
               ))}
             </div>
           )}
 
-          {/* No results after filter */}
-          {!loading && !analyzing && jobs.length > 0 && filteredJobs.length === 0 && (
-            <div className="empty-state">
-              <p>No jobs match this filter</p>
-              <small>Try a different filter or sort option</small>
-            </div>
+          {!loading && !analyzing && jobs.length>0 && !filtered.length && (
+            <div className="empty"><p>No jobs match these filters</p><small>Try different filters</small></div>
           )}
         </div>
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
   </script>
 </body>
 </html>
