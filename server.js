@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3001;
 
 // --- Middleware ---
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "5mb" }));
 
 // --- Serve static frontend ---
 app.use(express.static(join(__dirname, "public")));
@@ -22,7 +22,22 @@ app.get("/api/health", (req, res) => {
 });
 
 // ============================================================
-// POST /api/jobs  –  Search jobs via SerpAPI (Google Jobs)
+// Helper: fetch one page of Google Jobs from SerpAPI
+// ============================================================
+async function fetchJobsPage(query, apiKey, start = 0) {
+  const url = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&hl=en&start=${start}&api_key=${apiKey}`;
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "SerpAPI request failed");
+  }
+
+  return data.jobs_results || [];
+}
+
+// ============================================================
+// POST /api/jobs  –  Search jobs via SerpAPI (up to 50)
 // ============================================================
 app.post("/api/jobs", async (req, res) => {
   const SERPAPI_KEY = process.env.SERPAPI_KEY;
@@ -34,64 +49,61 @@ app.post("/api/jobs", async (req, res) => {
   const { keywords, location } = req.body || {};
   const searchKeywords = keywords || "financial analyst";
   const searchLocation = location || "Toronto, Ontario, Canada";
+  const query = `${searchKeywords} jobs in ${searchLocation}`;
 
   try {
-    const query = encodeURIComponent(`${searchKeywords} jobs in ${searchLocation}`);
-    const url = `https://serpapi.com/search.json?engine=google_jobs&q=${query}&hl=en&api_key=${SERPAPI_KEY}`;
+    // Fetch multiple pages to get ~50 jobs
+    // Google Jobs returns ~10 per page, so we need 5 pages
+    const pages = [0, 10, 20, 30, 40];
+    const allResults = [];
 
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-      console.error("SerpAPI error:", data);
-      return res.status(500).json({ error: data.error || "SerpAPI request failed" });
+    for (const start of pages) {
+      try {
+        const pageResults = await fetchJobsPage(query, SERPAPI_KEY, start);
+        if (pageResults.length === 0) break; // no more results
+        allResults.push(...pageResults);
+      } catch (pageErr) {
+        console.error(`Error fetching page starting at ${start}:`, pageErr.message);
+        if (allResults.length > 0) break; // we have some results, stop
+        throw pageErr; // no results at all, throw
+      }
     }
 
-    const jobResults = data.jobs_results || [];
-
-    const jobs = jobResults.map((item, i) => {
-      // Determine job type
+    const jobs = allResults.slice(0, 50).map((item, i) => {
       let type = "Full-time";
+      let salary = "";
+      let postedAt = "";
+
       if (item.detected_extensions) {
         const ext = item.detected_extensions;
-        if (ext.schedule_type) {
-          type = ext.schedule_type;
-        }
+        if (ext.schedule_type) type = ext.schedule_type;
+        if (ext.salary) salary = ext.salary;
+        if (ext.posted_at) postedAt = ext.posted_at;
       }
 
-      // Get salary
-      let salary = "";
-      if (item.detected_extensions && item.detected_extensions.salary) {
-        salary = item.detected_extensions.salary;
-      }
-
-      // Get posted time
-      let postedAt = "";
-      if (item.detected_extensions && item.detected_extensions.posted_at) {
-        postedAt = item.detected_extensions.posted_at;
-      }
-
-      // Get apply link
-      let url = "";
+      let applyUrl = "";
       if (item.apply_options && item.apply_options.length > 0) {
-        url = item.apply_options[0].link || "";
+        applyUrl = item.apply_options[0].link || "";
       } else if (item.share_link) {
-        url = item.share_link;
+        applyUrl = item.share_link;
       }
+
+      // Extract highlights as tags
+      const tags = item.job_highlights
+        ? item.job_highlights.flatMap((h) => h.items || []).slice(0, 5)
+        : [];
 
       return {
         id: item.job_id || `job-${i}`,
         title: item.title || "Untitled",
         company: item.company_name || "Unknown",
         location: item.location || "N/A",
-        type: type,
-        url: url,
-        salary: salary,
-        postedAt: postedAt,
+        type,
+        url: applyUrl,
+        salary,
+        postedAt,
         description: item.description || "",
-        tags: item.job_highlights
-          ? item.job_highlights.flatMap((h) => h.items || []).slice(0, 5)
-          : [],
+        tags,
       };
     });
 
@@ -115,27 +127,41 @@ app.post("/api/analyze", async (req, res) => {
   try {
     const { resume, jobs } = req.body;
 
-    const jobList = jobs
-      .map(
-        (j) =>
-          `ID:${j.id} | ${j.title} at ${j.company} | ${j.location} | ${j.type} | Salary: ${j.salary || "N/A"}`
-      )
-      .join("\n");
+    if (!resume || !resume.trim()) {
+      return res.status(400).json({ error: "Please upload or paste your resume first" });
+    }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        messages: [
-          {
-            role: "user",
-            content: `You are a career advisor AI. Given this resume and job listings, score each job 0-100 for fit and give a 1-sentence reason.
+    // Split jobs into batches of 15 to avoid token limits
+    const batchSize = 15;
+    const batches = [];
+    for (let i = 0; i < jobs.length; i += batchSize) {
+      batches.push(jobs.slice(i, i + batchSize));
+    }
+
+    let allScores = [];
+
+    for (const batch of batches) {
+      const jobList = batch
+        .map(
+          (j) =>
+            `ID:${j.id} | ${j.title} at ${j.company} | ${j.location} | ${j.type} | Salary: ${j.salary || "N/A"}`
+        )
+        .join("\n");
+
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 3000,
+          messages: [
+            {
+              role: "user",
+              content: `You are a career advisor AI. Given this resume and job listings, score each job 0-100 for fit and give a 1-sentence reason.
 
 Resume:
 ${resume}
@@ -145,34 +171,38 @@ ${jobList}
 
 Respond ONLY with valid JSON — no markdown, no backticks. Format:
 [{"id":"...","score":80,"reason":"..."},...]`,
-          },
-        ],
-      }),
-    });
+            },
+          ],
+        }),
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (!response.ok) {
-      console.error("Claude API error:", result);
-      return res.status(500).json({ error: "Claude API request failed", details: result });
-    }
+      if (!response.ok) {
+        console.error("Claude API error:", result);
+        continue; // skip failed batch, continue with others
+      }
 
-    const text = result.content?.[0]?.text || "[]";
-    const clean = text.replace(/```json|```/g, "").trim();
+      const text = result.content?.[0]?.text || "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
 
-    let scores;
-    try {
-      scores = JSON.parse(clean);
-    } catch {
-      const match = clean.match(/\[[\s\S]*\]/);
-      if (match) {
-        scores = JSON.parse(match[0]);
-      } else {
-        return res.status(500).json({ error: "Failed to parse Claude response", raw: text });
+      try {
+        const batchScores = JSON.parse(clean);
+        allScores.push(...batchScores);
+      } catch {
+        const match = clean.match(/\[[\s\S]*\]/);
+        if (match) {
+          try {
+            const batchScores = JSON.parse(match[0]);
+            allScores.push(...batchScores);
+          } catch {
+            console.error("Failed to parse batch response:", clean);
+          }
+        }
       }
     }
 
-    return res.json(scores);
+    return res.json(allScores);
   } catch (err) {
     console.error("Analyze endpoint error:", err);
     return res.status(500).json({ error: err.message });
