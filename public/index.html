@@ -432,12 +432,12 @@
     const RESUME_SUMMARY = "Danyal Shahzad — Master of Finance (McMaster DeGroote, GPA 3.7), Honours BComm Finance (GPA 3.5). Financial Analyst Intern at Martinrea International (14 months): Excel forecasting models for $20M+ budgets, variance analysis, ERP data extraction, executive dashboard creation. Skills: Financial Modeling, Valuation (DCF, Comps), Advanced Excel (VBA, Power Query), Power BI, SQL, Python, Bloomberg Terminal.";
 
     const PLATFORM_LINKS = {
-      LinkedIn: [
-        { label: "Financial Analyst — Toronto", url: "https://ca.linkedin.com/jobs/financial-analyst-jobs-toronto-on" },
-        { label: "Entry Level Financial Analyst", url: "https://ca.linkedin.com/jobs/entry-level-financial-analyst-jobs-toronto-on" },
-        { label: "FP&A Analyst", url: "https://ca.linkedin.com/jobs/financial-analyst-fp&a-jobs-toronto-on" },
-        { label: "Junior Financial Analyst", url: "https://ca.linkedin.com/jobs/junior-financial-analyst-jobs-toronto-on" },
-        { label: "Finance Internship", url: "https://ca.linkedin.com/jobs/finance-intern-jobs-toronto-on" },
+      Indeed: [
+        { label: "Financial Analyst — Toronto", url: "https://ca.indeed.com/jobs?q=financial+analyst&l=Toronto%2C+ON" },
+        { label: "Entry Level Financial Analyst", url: "https://ca.indeed.com/jobs?q=entry+level+financial+analyst&l=Toronto%2C+ON" },
+        { label: "FP&A Analyst", url: "https://ca.indeed.com/jobs?q=fp%26a+analyst&l=Toronto%2C+ON" },
+        { label: "Junior Financial Analyst", url: "https://ca.indeed.com/jobs?q=junior+financial+analyst&l=Toronto%2C+ON" },
+        { label: "Finance Internship", url: "https://ca.indeed.com/jobs?q=finance+internship&l=Toronto%2C+ON" },
       ]
     };
 
@@ -528,7 +528,7 @@
               )}
               {job.url && (
                 <a className="job-link" href={job.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                  View on LinkedIn
+                  View on Indeed
                   <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </a>
               )}
@@ -644,9 +644,9 @@
 
           {/* Platform Links */}
           <div className="platform-section">
-            <div className="platform-title">Quick Search Links — LinkedIn</div>
+            <div className="platform-title">Quick Search Links — Indeed</div>
             <div className="platform-links">
-              {PLATFORM_LINKS.LinkedIn.map(link => (
+              {PLATFORM_LINKS.Indeed.map(link => (
                 <a key={link.label} className="platform-link" href={link.url} target="_blank" rel="noopener noreferrer">
                   {link.label}
                 </a>
@@ -672,12 +672,12 @@
               {loading ? (
                 <>
                   <svg viewBox="0 0 24 24" style={{animation:"spin 0.8s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                  Scraping...
+                  Searching...
                 </>
               ) : (
                 <>
                   <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Scrape Jobs
+                  Search Jobs
                 </>
               )}
             </button>
@@ -746,8 +746,8 @@
           {loading && (
             <div className="loading-state">
               <div className="spinner" />
-              <div className="loading-text">Scraping LinkedIn via Apify...</div>
-              <div className="loading-sub">This can take 30–60 seconds — no timeout here</div>
+              <div className="loading-text">Searching Indeed for jobs...</div>
+              <div className="loading-sub">This usually takes 10–20 seconds</div>
             </div>
           )}
 
@@ -766,7 +766,7 @@
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
               </svg>
               <p>No jobs loaded yet</p>
-              <small>Enter keywords and location, then hit Scrape Jobs</small>
+              <small>Enter keywords and location, then hit Search Jobs</small>
             </div>
           )}
 
