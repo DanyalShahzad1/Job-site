@@ -9,21 +9,15 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- Middleware ---
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
-
-// --- Serve static frontend ---
 app.use(express.static(join(__dirname, "public")));
 
-// --- Health check ---
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// ============================================================
-// Helper: fetch one page of Google Jobs from SerpAPI
-// ============================================================
+// ---- Fetch one page from SerpAPI ----
 async function fetchJobsPage(query, apiKey, nextPageToken = null) {
   let url = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&hl=en&api_key=${apiKey}`;
   if (nextPageToken) {
@@ -31,48 +25,37 @@ async function fetchJobsPage(query, apiKey, nextPageToken = null) {
   }
   const response = await fetch(url);
   const data = await response.json();
-
   if (!response.ok || data.error) {
     throw new Error(data.error || "SerpAPI request failed");
   }
-
   return {
     jobs: data.jobs_results || [],
     nextToken: data.serpapi_pagination?.next_page_token || null,
   };
 }
 
-// ============================================================
-// POST /api/jobs  –  Search jobs via SerpAPI (up to 50)
-// ============================================================
+// ---- POST /api/jobs ----
 app.post("/api/jobs", async (req, res) => {
   const SERPAPI_KEY = process.env.SERPAPI_KEY;
-
-  if (!SERPAPI_KEY) {
-    return res.status(500).json({ error: "Missing SERPAPI_KEY" });
-  }
+  if (!SERPAPI_KEY) return res.status(500).json({ error: "Missing SERPAPI_KEY" });
 
   const { keywords, location } = req.body || {};
-  const searchKeywords = keywords || "financial analyst";
-  const searchLocation = location || "Toronto, Ontario, Canada";
-  const query = `${searchKeywords} jobs in ${searchLocation}`;
+  const query = `${keywords || "financial analyst"} jobs in ${location || "Toronto, Ontario, Canada"}`;
 
   try {
     const allResults = [];
     let nextToken = null;
-    const maxPages = 5; // up to 5 pages for ~50 jobs
 
-    for (let page = 0; page < maxPages; page++) {
+    for (let page = 0; page < 5; page++) {
       try {
         const { jobs, nextToken: token } = await fetchJobsPage(query, SERPAPI_KEY, nextToken);
         if (jobs.length === 0) break;
         allResults.push(...jobs);
         nextToken = token;
-        if (!nextToken) break; // no more pages
-      } catch (pageErr) {
-        console.error(`Error fetching page ${page + 1}:`, pageErr.message);
+        if (!nextToken) break;
+      } catch (err) {
         if (allResults.length > 0) break;
-        throw pageErr;
+        throw err;
       }
     }
 
@@ -88,12 +71,21 @@ app.post("/api/jobs", async (req, res) => {
         if (ext.posted_at) postedAt = ext.posted_at;
       }
 
-      let applyUrl = "";
-      if (item.apply_options && item.apply_options.length > 0) {
-        applyUrl = item.apply_options[0].link || "";
-      } else if (item.share_link) {
-        applyUrl = item.share_link;
+      // Collect ALL apply sources for filtering
+      const sources = [];
+      const applyLinks = {};
+      if (item.apply_options) {
+        item.apply_options.forEach((opt) => {
+          const name = opt.title || "Unknown";
+          sources.push(name);
+          applyLinks[name] = opt.link || "";
+        });
       }
+
+      const primaryUrl =
+        (item.apply_options && item.apply_options[0]?.link) ||
+        item.share_link ||
+        "";
 
       const tags = item.job_highlights
         ? item.job_highlights.flatMap((h) => h.items || []).slice(0, 5)
@@ -105,53 +97,41 @@ app.post("/api/jobs", async (req, res) => {
         company: item.company_name || "Unknown",
         location: item.location || "N/A",
         type,
-        url: applyUrl,
+        url: primaryUrl,
         salary,
         postedAt,
         description: item.description || "",
         tags,
+        sources,
+        applyLinks,
       };
     });
 
     return res.json(jobs);
   } catch (err) {
-    console.error("Jobs endpoint error:", err);
+    console.error("Jobs error:", err);
     return res.status(500).json({ error: err.message });
   }
 });
 
-// ============================================================
-// POST /api/analyze  –  Score jobs against resume via Claude
-// ============================================================
+// ---- POST /api/analyze ----
 app.post("/api/analyze", async (req, res) => {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-  if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: "Missing ANTHROPIC_API_KEY" });
-  }
+  if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: "Missing ANTHROPIC_API_KEY" });
 
   try {
     const { resume, jobs } = req.body;
+    if (!resume?.trim()) return res.status(400).json({ error: "Upload your resume first" });
 
-    if (!resume || !resume.trim()) {
-      return res.status(400).json({ error: "Please upload or paste your resume first" });
-    }
-
-    // Split jobs into batches of 15 to avoid token limits
     const batchSize = 15;
     const batches = [];
-    for (let i = 0; i < jobs.length; i += batchSize) {
-      batches.push(jobs.slice(i, i + batchSize));
-    }
+    for (let i = 0; i < jobs.length; i += batchSize) batches.push(jobs.slice(i, i + batchSize));
 
     let allScores = [];
 
     for (const batch of batches) {
       const jobList = batch
-        .map(
-          (j) =>
-            `ID:${j.id} | ${j.title} at ${j.company} | ${j.location} | ${j.type} | Salary: ${j.salary || "N/A"}`
-        )
+        .map((j) => `ID:${j.id} | ${j.title} at ${j.company} | ${j.location} | ${j.type} | Salary: ${j.salary || "N/A"}`)
         .join("\n");
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -183,44 +163,25 @@ Respond ONLY with valid JSON — no markdown, no backticks. Format:
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        console.error("Claude API error:", result);
-        continue;
-      }
+      if (!response.ok) { console.error("Claude error:", result); continue; }
 
       const text = result.content?.[0]?.text || "[]";
       const clean = text.replace(/```json|```/g, "").trim();
-
       try {
-        const batchScores = JSON.parse(clean);
-        allScores.push(...batchScores);
+        allScores.push(...JSON.parse(clean));
       } catch {
         const match = clean.match(/\[[\s\S]*\]/);
-        if (match) {
-          try {
-            const batchScores = JSON.parse(match[0]);
-            allScores.push(...batchScores);
-          } catch {
-            console.error("Failed to parse batch response:", clean);
-          }
-        }
+        if (match) try { allScores.push(...JSON.parse(match[0])); } catch {}
       }
     }
 
     return res.json(allScores);
   } catch (err) {
-    console.error("Analyze endpoint error:", err);
+    console.error("Analyze error:", err);
     return res.status(500).json({ error: err.message });
   }
 });
 
-// --- SPA fallback ---
-app.get("*", (req, res) => {
-  res.sendFile(join(__dirname, "public", "index.html"));
-});
+app.get("*", (req, res) => res.sendFile(join(__dirname, "public", "index.html")));
 
-// --- Start ---
-app.listen(PORT, () => {
-  console.log(`Danyal Job Matcher running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Running on port ${PORT}`));
