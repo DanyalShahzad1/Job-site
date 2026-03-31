@@ -22,7 +22,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // ============================================================
-// POST /api/jobs  –  Search Indeed jobs via Claude + MCP
+// POST /api/jobs  –  Search jobs via Claude + web search
 // ============================================================
 app.post("/api/jobs", async (req, res) => {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -52,33 +52,28 @@ app.post("/api/jobs", async (req, res) => {
             name: "web_search",
           },
         ],
-        mcp_servers: [
-          {
-            type: "url",
-            url: "https://mcp.indeed.com/claude/mcp",
-            name: "indeed-mcp",
-          },
-        ],
         messages: [
           {
             role: "user",
-            content: `Search for "${searchKeywords}" jobs in "${searchLocation}" on Indeed (country code: CA)${jobType ? `, job type: ${jobType}` : ""}.
+            content: `Search Indeed Canada for "${searchKeywords}" jobs in "${searchLocation}"${jobType ? ` (${jobType})` : ""}. Find at least 10 real job postings currently listed.
 
-Return ONLY valid JSON — no markdown, no backticks, no explanation. Format:
+For each job, extract: title, company, location, job type (Full-time/Contract/Part-time/Internship/Temporary), salary if listed, the Indeed apply URL, and when it was posted.
+
+Return ONLY a valid JSON array — no markdown, no backticks, no explanation before or after. Format:
 [
   {
-    "id": "the_job_id",
+    "id": "job-0",
     "title": "Job Title",
     "company": "Company Name",
     "location": "City, Province",
-    "type": "Full-time or Contract or Internship or Part-time or Temporary",
-    "url": "the apply URL from results",
-    "salary": "salary if available or empty string",
-    "postedAt": "posted date if available or empty string"
+    "type": "Full-time",
+    "url": "https://indeed.com/...",
+    "salary": "$60,000 - $80,000 a year",
+    "postedAt": "3 days ago"
   }
 ]
 
-Return every job from the search results. Only return the JSON array, nothing else.`,
+Only return the JSON array, absolutely nothing else.`,
           },
         ],
       }),
@@ -91,7 +86,7 @@ Return every job from the search results. Only return the JSON array, nothing el
       return res.status(500).json({ error: "Claude API request failed", details: result });
     }
 
-    // Extract text from Claude's response (may have multiple content blocks)
+    // Extract text from Claude's response
     const textBlocks = (result.content || [])
       .filter((block) => block.type === "text")
       .map((block) => block.text);
@@ -104,7 +99,6 @@ Return every job from the search results. Only return the JSON array, nothing el
       const clean = fullText.replace(/```json|```/g, "").trim();
       jobs = JSON.parse(clean);
     } catch {
-      // Try to find JSON array in the text
       const match = fullText.match(/\[[\s\S]*\]/);
       if (match) {
         try {
